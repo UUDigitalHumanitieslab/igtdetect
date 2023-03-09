@@ -10,3 +10,5 @@ output
 sample
 data
 pdf2gloss.log
+local-test.py
+.DS_Store
