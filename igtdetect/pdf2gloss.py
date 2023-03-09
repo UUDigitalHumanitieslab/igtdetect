@@ -5,14 +5,15 @@ import glossharvester
 import logging
 from pathlib import Path
 
-'''
-Looks in the input_path directory for PDFs, 
-scans them into txt files,
-derives features from those txt files, 
-analyzes the feature file using igt-detect,
-analyzes the output from igt-detect with our own gloss-harvest script
-'''
+
 def main(input_path, output_path, model_path='../sample/new-model.pkl.gz', config_path='../defaults.ini.sample'):
+    '''
+    Looks in the input_path directory for PDFs, 
+    scans them into txt files,
+    derives features from those txt files, 
+    analyzes the feature file using igt-detect,
+    analyzes the output from igt-detect with our own gloss-harvest script
+    '''
     logging.basicConfig(filename='pdf2gloss.log', encoding='utf8', level=logging.INFO)
     logging.debug('Started analysis.')
     
@@ -28,10 +29,11 @@ def main(input_path, output_path, model_path='../sample/new-model.pkl.gz', confi
 
     save_glosses_as_txt(IGT_list, output_path)
 
-'''
-Sets up the temporary environment to save the different output files that are generated
-'''
+
 def setup_temp_dir(output_path):
+    '''
+    Sets up the temporary environment to save the different output files that are generated
+    '''
     temp_path = output_path / 'temp'
     Path.mkdir(temp_path, exist_ok=True)
     Path.mkdir(temp_path / 'txt', exist_ok=True)
@@ -40,14 +42,15 @@ def setup_temp_dir(output_path):
     logging.debug('Created temporary directories.')
     return temp_path
     
-'''
-Iterates over a directory to find PDFs and converts them to txt files.
-Returns path to the txt file directory.
-'''
+
 def scan_pdfs(input_path, temp_path):
+    '''
+    Iterates over a directory to find PDFs and converts them to txt files.
+    Returns path to the txt file directory.
+    '''
     scanned_files_path = temp_path / 'txt'
     for filename in os.listdir(input_path):
-        if filename.endswith('.pdf'):
+        if filename.lower().endswith('.pdf'):
             path_to_pdf = input_path / filename
             text_file = os.path.basename(path_to_pdf).split('.pdf')[0] + '-scanned.txt'
             path_to_txt = scanned_files_path / text_file
@@ -59,11 +62,12 @@ def scan_pdfs(input_path, temp_path):
     logging.info("PDF scanning complete, scanned {} files".format(len(os.listdir(scanned_files_path))))
     return scanned_files_path
 
-'''
-Iterates over txt files in a directory in order to derive the features from them.
-Returns a path to a directory with freki files.
-'''
+
 def get_features_from_txts(input_path, temp_path):
+    '''
+    Iterates over txt files in a directory in order to derive the features from them.
+    Returns a path to a directory with freki files.
+    '''
     features_path = temp_path / 'features'
     for filename in os.listdir(input_path):
         if filename.endswith('.txt'):
@@ -79,19 +83,21 @@ def get_features_from_txts(input_path, temp_path):
     return features_path
 
 
-'''
-Runs the igt-detect script with a provided model or config, resulting in a freki features file with tags
-'''
+
 def detect_igts(input_path, temp_path, model_path, config_path):
+    '''
+    Runs the igt-detect script with a provided model or config, resulting in a freki features file with tags
+    '''
     analyzed_features_path = temp_path / 'analyzed_features'
     subprocess.run(['python', './detect-igt', 'test', '--config', config_path, '--classifier-path', model_path, '--test-files', input_path, '--classified-dir', analyzed_features_path])
     logging.info('igt-detect finished: analyzed {} files'.format(len(os.listdir(analyzed_features_path))))
     return analyzed_features_path
 
-'''
-Runs a harvesting script on top of the igt-detect analysis
-'''
+
 def harvest_glosses(input_path):
+    '''
+    Runs a harvesting script on top of the igt-detect analysis
+    '''
     IGT_list_complete = []
     for freki_file in os.listdir(input_path):
         path_to_freki_feature_file = input_path / freki_file
@@ -101,10 +107,11 @@ def harvest_glosses(input_path):
 
     return IGT_list_complete
 
-'''
-Saves the IGTs to a txt file
-'''
+
 def save_glosses_as_txt(IGT_list, output_path):
+    '''
+    Saves the IGTs to a txt file
+    '''
     filename = 'IGTs_harvested.txt'
     with open(os.path.join(output_path, filename), 'w') as file:
         for item in IGT_list:
