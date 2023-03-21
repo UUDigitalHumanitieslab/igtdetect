@@ -12,6 +12,30 @@ def get_iscore(row:str):
     return float(row.split('iscore=')[1][0:3]) if 'iscore' in row else 0
 
 class IGT():
+    '''
+    A class used to represent a single item of Interlinear Glossed Text
+
+    Attributes
+    ----------
+    line: str
+        transcript of the original utterance in the text
+    
+    gloss: str
+        glossed version of the transcript, usually located right underneath the transcript line
+
+    translation: str
+        translation of the transcript line, usually in English
+
+    source: str
+        title of the publication in which the IGT occurs
+
+    linenr: int
+        line number of the transcript line in the publication
+
+    classification_methods: str[]
+        list of the methods employed to arrive at this instance of the IGT, for example through igt-detect
+        or l-score
+    '''
     def __init__(self, line="NA", gloss="NA", translation="NA", source="NA", linenr=0, classification_methods=[]):
         self.line = line
         self.gloss = gloss
