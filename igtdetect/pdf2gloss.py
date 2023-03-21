@@ -107,7 +107,7 @@ def detect_igts(input_path, temp_path, model_path, config_path):
     check_if_empty(input_path)
 
     try:
-        subprocess.run(['python', './detect-igt', 'test', '--config', config_path, '--classifier-path', model_path, '--test-files', input_path, '--classified-dir', analyzed_features_path])
+        subprocess.run(['python', 'detect-igt', 'test', '--config', config_path, '--classifier-path', model_path, '--test-files', input_path, '--classified-dir', analyzed_features_path])
         logging.info('igt-detect finished: analyzed {} files'.format(len(os.listdir(analyzed_features_path))))
     except:
         logging.error('igt-detect failed')
