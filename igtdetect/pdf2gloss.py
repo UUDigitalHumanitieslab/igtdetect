@@ -29,6 +29,7 @@ def main(input_path, output_path, model_path='../sample/new-model.pkl.gz', confi
     IGT_list = harvest_glosses(detected_igts)
 
     save_glosses_as_xml(IGT_list, output_path)
+    exit()
 
 
 def setup_temp_dir(output_path):
@@ -107,7 +108,8 @@ def detect_igts(input_path, temp_path, model_path, config_path):
     check_if_empty(input_path)
 
     try:
-        subprocess.run(['python', 'detect-igt', 'test', '--config', config_path, '--classifier-path', model_path, '--test-files', input_path, '--classified-dir', analyzed_features_path])
+        # TODO: make this a path that works everywhere with Ben's input
+        subprocess.run(['python', '../detect-igt', 'test', '--config', config_path, '--classifier-path', model_path, '--test-files', input_path, '--classified-dir', analyzed_features_path])
         logging.info('igt-detect finished: analyzed {} files'.format(len(os.listdir(analyzed_features_path))))
     except:
         logging.error('igt-detect failed')
@@ -175,12 +177,13 @@ if __name__ == '__main__':
     
     input_path = sys.argv[1]  # path to a dir with txt files
     output_path = sys.argv[2] # path to a dir where the gloss xmls are stored
-    if len(sys.agv) > 2:
+    if len(sys.argv) > 3:
         model_path = sys.argv[3]
     else:
         logging.info('No model or config paths given, using defaults')
         main(input_path, output_path)
-    if len(sys.argv) > 3:
+
+    if len(sys.argv) > 4:
         config_path = sys.argv[4] # path to a 
     else:
         logging.info('No config path given, using default')
