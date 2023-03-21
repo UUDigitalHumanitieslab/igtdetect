@@ -51,6 +51,8 @@ def scan_pdfs(input_path, temp_path):
     '''
     scanned_count = 0
     scanned_files_path = temp_path / 'txt'
+    check_if_empty(input_path)
+
     for filename in os.listdir(input_path):
         if filename.lower().endswith('.pdf'):
             path_to_pdf = input_path / filename
@@ -76,6 +78,8 @@ def get_features_from_txts(input_path, temp_path):
     '''
     features_count = 0
     features_path = temp_path / 'features'
+    check_if_empty(input_path)
+
     for filename in os.listdir(input_path):
         if filename.endswith('.txt'):
             path_to_txt = input_path / filename
@@ -100,6 +104,8 @@ def detect_igts(input_path, temp_path, model_path, config_path):
     Runs the igt-detect script with a provided model or config, resulting in a freki features file with tags
     '''
     analyzed_features_path = temp_path / 'analyzed_features'
+    check_if_empty(input_path)
+
     try:
         subprocess.run(['python', './detect-igt', 'test', '--config', config_path, '--classifier-path', model_path, '--test-files', input_path, '--classified-dir', analyzed_features_path])
         logging.info('igt-detect finished: analyzed {} files'.format(len(os.listdir(analyzed_features_path))))
@@ -113,6 +119,9 @@ def harvest_glosses(input_path):
     Runs a harvesting script on top of the igt-detect analysis
     '''
     IGT_list_complete = []
+    check_if_empty(input_path)
+
+
     for freki_file in os.listdir(input_path):
         path_to_freki_feature_file = input_path / freki_file
         IGT_list = glossharvester.harvest_IGTs(path_to_freki_feature_file)
@@ -151,9 +160,29 @@ def save_glosses_as_xml(IGT_list, output_path):
     with open(os.path.join(output_path, filename), 'w') as file:
         glosses_tree.write(file, encoding='unicode')
 
+def check_if_empty(path):
+    if len(os.listdir(path)) == 0:
+        logging.error("No files found in {}.".format(input_path))
+        return True
+    else:
+        return False
+
 if __name__ == '__main__':
-    input_path = sys.argv[1]
-    output_path = sys.argv[2]
-    model_path = sys.argv[3]
-    config_path = sys.argv[4]
+    if len(sys.argv) < 2:
+        print("Error: Missing arguments. Provide at least an input path and an output path.")
+        exit()
+    
+    input_path = sys.argv[1]  # path to a dir with txt files
+    output_path = sys.argv[2] # path to a dir where the gloss xmls are stored
+    if len(sys.agv) > 2:
+        model_path = sys.argv[3]
+    else:
+        logging.info('No model or config paths given, using defaults')
+        main(input_path, output_path)
+    if len(sys.argv) > 3:
+        config_path = sys.argv[4] # path to a 
+    else:
+        logging.info('No config path given, using default')
+        main(input_path, output_path, model_path)
+
     main(input_path, output_path, model_path, config_path)
