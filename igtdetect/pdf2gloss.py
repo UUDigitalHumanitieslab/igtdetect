@@ -109,6 +109,7 @@ def get_features_from_txts(input_path, temp_path):
 def detect_igts(input_path, temp_path, model_path, config_path, base_path):
     '''
     Runs the igt-detect script with a provided model or config, resulting in a freki features file with tags
+    Arguments: input, and temp paths to get and save data, model, config, and base paths for the igt-detect script
     '''
     analyzed_features_path = temp_path / 'analyzed_features'
     check_if_empty(input_path)
@@ -125,6 +126,7 @@ def detect_igts(input_path, temp_path, model_path, config_path, base_path):
 def harvest_glosses(input_path):
     '''
     Runs a harvesting script on top of the igt-detect analysis
+    iterates over the freki file line-by-line and returns a list of IGT objects
     '''
     IGT_list_complete = []
     check_if_empty(input_path)
@@ -191,7 +193,7 @@ if __name__ == '__main__':
         main(input_path, output_path)
 
     if len(sys.argv) > 4:
-        config_path = sys.argv[4] # path to a 
+        config_path = sys.argv[4] # path to a .sample config file
     else:
         logging.info('No config path given, using default')
         main(input_path, output_path, model_path)
