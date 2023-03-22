@@ -36,18 +36,25 @@ class IGT():
         list of the methods employed to arrive at this instance of the IGT, for example through igt-detect
         or l-score
     '''
-    def __init__(self, line="NA", gloss="NA", translation="NA", source="NA", linenr=0, classification_methods=[]):
+    def __init__(self, line="NA", gloss="NA", translation="NA", source="NA", linenr=0, pagenr=0, classification_methods=[]):
         self.line = line
         self.gloss = gloss
         self.translation = translation
         self.source = source
         self.linenr = linenr
+        self.pagenr = pagenr
         self.classification_methods = classification_methods
 
     def __str__(self):
         return f"Source: {self.source}\nL: {self.line}\nG: {self.gloss}\nT: {self.translation}\nClassification methods: {self.classification_methods}\n"
 
 def harvest_IGTs(classified_freki_filepath: str, iscore_cutoff: float = 0.6):
+    '''
+    attempts to harvest as much information about each IGT as possible
+    iterates through a freki file 
+    if the iscore cutoff is lowered, the script is more generous with interpreting
+    lines as Glosses or Translations based on their alignment
+    '''
     IGTs = []
     saved_linenrs = []
     with open(classified_freki_filepath) as file:
@@ -61,7 +68,7 @@ def harvest_IGTs(classified_freki_filepath: str, iscore_cutoff: float = 0.6):
             iscore = get_iscore(row)
             
             if linetag == 'L':
-                igt = IGT(line=utterance, linenr=int(linenr), source=source, 
+                igt = IGT(line=utterance, linenr=int(linenr), source=source, pagenr=pagenr, 
                     classification_methods=['IGT initialized by L tag'])
                 IGTs.append(igt)
                 saved_linenrs.append(linenr)
@@ -93,7 +100,7 @@ def harvest_IGTs(classified_freki_filepath: str, iscore_cutoff: float = 0.6):
 
                 # if there are no IGT candidates, create a new IGT
                 else:
-                    igt = IGT(gloss=utterance, source=source) if linetag == 'G' else IGT(translation=utterance, source=source)
+                    igt = IGT(gloss=utterance, source=source, pagenr=pagenr) if linetag == 'G' else IGT(translation=utterance, source=source, pagenr=pagenr)
                     igt.line = get_utterance(classified_freki[i-1]) if linetag == 'G' else get_utterance(classified_freki[i-2])
                     igt.classification_methods = ['IGT initialized by G or T tag, L assigned accordingly']
                     saved_linenrs.append(linenr)
@@ -104,7 +111,7 @@ def harvest_IGTs(classified_freki_filepath: str, iscore_cutoff: float = 0.6):
                 if get_linenr(classified_freki[i-1]) in saved_linenrs:
                     continue
                 else:
-                    igt = IGT(gloss=utterance, source=source)
+                    igt = IGT(gloss=utterance, source=source, pagenr=pagenr)
                     igt.line = get_utterance(classified_freki[i-1])
                     igt.translation = get_utterance(classified_freki[i+1]) if i < len(classified_freki)-2 else 'NA'
                     igt.classification_methods = ['IGT initialized by iscore L and T assigned accordingly']
@@ -116,6 +123,7 @@ def harvest_IGTs(classified_freki_filepath: str, iscore_cutoff: float = 0.6):
         # can later maybe be expanded with page number as well (information available on the same row)
         elif row.startswith('doc_id'):
             source = row.split('doc_id=')[1].split(' ')[0]
+            pagenr = row.split('page=')[1].split(' ')[0]
         else:
             pass
 
