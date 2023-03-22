@@ -7,7 +7,7 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 
 
-def main(input_path, output_path, model_path='../sample/new-model.pkl.gz', config_path='../defaults.ini.sample'):
+def main(input_path, output_path, model_path='sample/new-model.pkl.gz', config_path='defaults.ini.sample'):
     '''
     Looks in the input_path directory for PDFs, 
     scans them into txt files,
@@ -18,13 +18,19 @@ def main(input_path, output_path, model_path='../sample/new-model.pkl.gz', confi
     logging.basicConfig(filename='pdf2gloss.log', encoding='utf8', level=logging.INFO)
     logging.debug('Started analysis.')
     
+    base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
     temp_path = setup_temp_dir(Path(output_path))
 
     scanned_texts = scan_pdfs(Path(input_path), temp_path)
 
     features = get_features_from_txts(scanned_texts, temp_path)
     
-    detected_igts = detect_igts(features, temp_path, model_path, config_path)
+    detected_igts = detect_igts(features, 
+                                temp_path, 
+                                os.path.join(base_path, model_path), 
+                                os.path.join(base_path,config_path), 
+                                base_path)
 
     IGT_list = harvest_glosses(detected_igts)
 
@@ -100,7 +106,7 @@ def get_features_from_txts(input_path, temp_path):
 
 
 
-def detect_igts(input_path, temp_path, model_path, config_path):
+def detect_igts(input_path, temp_path, model_path, config_path, base_path):
     '''
     Runs the igt-detect script with a provided model or config, resulting in a freki features file with tags
     '''
@@ -109,7 +115,7 @@ def detect_igts(input_path, temp_path, model_path, config_path):
 
     try:
         # TODO: make this a path that works everywhere with Ben's input
-        subprocess.run(['python', '../detect-igt', 'test', '--config', config_path, '--classifier-path', model_path, '--test-files', input_path, '--classified-dir', analyzed_features_path])
+        subprocess.run(['python', os.path.join(base_path,'detect-igt'), 'test', '--config', config_path, '--classifier-path', model_path, '--test-files', input_path, '--classified-dir', analyzed_features_path])
         logging.info('igt-detect finished: analyzed {} files'.format(len(os.listdir(analyzed_features_path))))
     except:
         logging.error('igt-detect failed')
