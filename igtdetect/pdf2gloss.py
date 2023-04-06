@@ -164,6 +164,7 @@ def save_glosses_as_xml(IGT_list, output_path):
         content.set('line', item.line)
         content.set('gloss', item.gloss)
         content.set('translation', item.translation)
+        content.set('context', item.context)
 
     filename = "IGTs_harvested.xml"
     glosses_tree = ET.ElementTree(glosses)
