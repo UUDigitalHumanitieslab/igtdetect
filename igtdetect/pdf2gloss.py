@@ -153,7 +153,7 @@ def save_glosses_as_txt(IGT_list, output_path):
 def save_glosses_as_xml(IGT_list, output_path):
     glosses = ET.Element('Glosses')
     for index, item in enumerate(IGT_list):
-        gloss = ET.SubElement(glosses, 'gloss_'+str(index))
+        gloss = ET.SubElement(glosses, 'gloss')
         meta = ET.SubElement(gloss, 'metadata')
         meta.set('source', item.source)
         meta.set('pagenr', str(item.pagenr))
