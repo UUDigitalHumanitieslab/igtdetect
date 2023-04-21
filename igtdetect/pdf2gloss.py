@@ -138,17 +138,12 @@ def match_dois(IGT_list, dois):
     Matches DOIs to IGT objects using the source filename (without the extension)
     returns an IGT_list with the DOIs supplemented
     '''
-    matched_IGT_list = []
     for IGT in IGT_list:
         try:
-            doi = dois[IGT.source]
-            updated_IGT = IGT
-            updated_IGT.doi = doi
-            matched_IGT_list.append(updated_IGT)
+            IGT.doi = dois[IGT.source]
         except:
-            matched_IGT_list.append(IGT)
             logging.info('No doi could be matched to {}'.format(IGT.source))
-    return matched_IGT_list
+    return  IGT_list
 
 
 def harvest_glosses(input_path, dois):
