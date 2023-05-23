@@ -127,9 +127,11 @@ def detect_igts(input_path, temp_path, model_path, config_path, base_path):
 
     try:
         # TODO: make this a path that works everywhere with Ben's input
-        subprocess.run(['python', os.path.join(base_path,'detect-igt'), 'test', '--config', config_path, '--classifier-path', model_path, '--test-files', input_path, '--classified-dir', analyzed_features_path])
+        subprocess.check_output(['python', os.path.join(base_path,'detect-igt'), 'test', '--config', config_path, '--classifier-path', model_path, '--test-files', input_path, '--classified-dir', analyzed_features_path])
         logging.info('igt-detect finished: analyzed {} files'.format(len(os.listdir(analyzed_features_path))))
-    except:
+    except subprocess.CalledProcessError as e:
+        print(e.output)
+        analyzed_features_path = temp_path / 'features'
         logging.error('igt-detect failed')
     return analyzed_features_path
 
@@ -144,7 +146,7 @@ def match_dois(IGT_list, dois):
         except:
             logging.info('No doi could be matched to {}'.format(igt.source))
 
-def harvest_glosses(input_path, dois):
+def harvest_glosses(input_path, dois=None):
     '''
     Runs a harvesting script on top of the igt-detect analysis
     iterates over the freki file line-by-line and returns a list of IGT objects
@@ -154,12 +156,13 @@ def harvest_glosses(input_path, dois):
 
 
     for freki_file in os.listdir(input_path):
-        path_to_freki_feature_file = input_path / freki_file
+        path_to_freki_feature_file = os.path.join(input_path, freki_file)
         IGT_list = glossharvester.harvest_IGTs(path_to_freki_feature_file)
         IGT_list_complete += IGT_list
         logging.info("Harvested glosses from {}, total of {} IGTs.".format(freki_file, len(IGT_list)))
     
-    match_dois(IGT_list_complete, dois)
+    if dois:
+        match_dois(IGT_list_complete, dois)
 
     return IGT_list_complete
 
