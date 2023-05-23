@@ -67,7 +67,7 @@ def scan_pdfs(input_path, temp_path):
     for filename in os.listdir(input_path):
         if filename.lower().endswith('.pdf'):
             path_to_pdf = input_path / filename
-            text_file = os.path.splitext(path_to_pdf)[0] + '-scanned.txt'
+            text_file = path_to_pdf.stem + '-scanned.txt'
             path_to_txt = scanned_files_path / text_file
             try:
                 subprocess.run(['pdf2txt.py', '-t', 'xml', '-o', path_to_txt, path_to_pdf])
@@ -202,7 +202,7 @@ def check_if_empty(path):
     Checks if a directory is empty, used for debugging
     '''
     if len(os.listdir(path)) == 0:
-        logging.error("No files found in {}.".format(input_path))
+        logging.error("No files found in {}.".format(path))
         return True
     else:
         return False
