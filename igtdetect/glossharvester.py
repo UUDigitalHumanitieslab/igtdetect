@@ -1,3 +1,4 @@
+import re
 
 def get_utterance(row: str):
     return row.split(':')[1].strip('\n') if ':' in row else 'NA'
@@ -18,6 +19,29 @@ def get_context(lines, index, linetype='G', context_size=5):
     print("CONTEXT:\n")
     print(context)
     return context
+
+def detect_prefix(line: str):
+    '''
+    Detects the presence of a prefix in a line and returns the prefix
+    If a prefix is found, it looks ahead to scan for double prefixes
+    '''
+    punctuation_pattern = r'[.\(\)\{\}\[\]]'
+    number_pattern = r'\d+'
+    prefix = []
+    words = line.split()
+    item = words[0]
+    punctuations = re.findall(punctuation_pattern, item)
+    numerals = re.findall(number_pattern, item)
+    if (punctuations or numerals) and len(item) < 6:
+        prefix.append(item)
+        if len(words) > 1:
+            next_prefix = detect_prefix(' '.join(words[1:]))
+            if next_prefix:
+                prefix += next_prefix
+    else:
+        return None
+    return prefix
+
 
 class IGT():
     '''
