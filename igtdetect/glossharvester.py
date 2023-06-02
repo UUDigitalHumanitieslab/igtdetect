@@ -1,3 +1,4 @@
+import re
 
 def get_utterance(row: str):
     return row.split(':')[1].strip('\n') if ':' in row else 'NA'
@@ -6,7 +7,10 @@ def get_linenr(row: str):
     return row.split('line=')[1].split()[0] if 'line=' in row else 'NA'
 
 def get_linetag(row: str):
-    return row.split('tag=')[1][0] if 'tag=' in row else 'NA'
+    try:
+        return row.split('tag=')[1][0] if 'tag=' in row else 'NA'
+    except:
+        return 'NA'
 
 def get_iscore(row:str):
     return float(row.split('iscore=')[1][0:3]) if 'iscore' in row else 0
@@ -14,9 +18,10 @@ def get_iscore(row:str):
 def get_context(lines, index, linetype='G', context_size=5):
     context = ""
     for i in range(-context_size, context_size):
-        context += str(get_utterance(lines[index+i]) + "\n")
-    print("CONTEXT:\n")
-    print(context)
+        try:
+            context += str(get_utterance(lines[index+i]) + "\n")
+        except:
+            return context
     return context
 
 class IGT():
@@ -47,7 +52,7 @@ class IGT():
         list of the methods employed to arrive at this instance of the IGT, for example through igt-detect
         or l-score
     '''
-    def __init__(self, line="NA", gloss="NA", translation="NA", context="", source="NA", linenr=0, pagenr=0, classification_methods=[]):
+    def __init__(self, line="NA", gloss="NA", translation="NA", context="", source="NA", linenr=0, pagenr=0, doi="NA", classification_methods=[]):
         self.line = line
         self.gloss = gloss
         self.translation = translation
@@ -55,6 +60,7 @@ class IGT():
         self.source = source
         self.linenr = linenr
         self.pagenr = pagenr
+        self.doi = doi
         self.classification_methods = classification_methods
 
 
@@ -75,7 +81,7 @@ def harvest_IGTs(classified_freki_filepath: str, iscore_cutoff: float = 0.6):
     
     for (i, row) in enumerate(classified_freki):
         if row.startswith('line'):
-            linetag = row.split('tag=')[1][0]
+            linetag = get_linetag(row)
             linenr = get_linenr(row)
             utterance = get_utterance(row)
             iscore = get_iscore(row)
@@ -140,12 +146,10 @@ def harvest_IGTs(classified_freki_filepath: str, iscore_cutoff: float = 0.6):
                     continue
 
         # save the doc_id as the source
-        # can later maybe be expanded with page number as well (information available on the same row)
         elif row.startswith('doc_id'):
-            source = row.split('doc_id=')[1].split(' ')[0]
+            source = re.search(r"doc_id=(.*?)-scanned", row).group(1)
             pagenr = row.split('page=')[1].split(' ')[0]
         else:
             pass
-
 
     return IGTs
