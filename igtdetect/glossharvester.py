@@ -49,6 +49,15 @@ def detect_prefix(line: str):
         return None
     return prefix
 
+def detect_grammaticality(utterance: str):
+    words = utterance.split()
+    if len(words) > 0:
+        grammaticality_marker = re.search(r"\*|\?|\#|\%", words[0][0])
+        if grammaticality_marker:
+            print(words[0])
+            return grammaticality_marker.group()
+    return None
+
 
 class IGT():
     '''
