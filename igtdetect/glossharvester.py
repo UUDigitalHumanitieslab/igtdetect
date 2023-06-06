@@ -54,7 +54,6 @@ def detect_grammaticality(utterance: str):
     if len(words) > 0:
         grammaticality_marker = re.search(r"\*|\?|\#|\%", words[0][0])
         if grammaticality_marker:
-            print(words[0])
             return grammaticality_marker.group()
     return None
 
@@ -87,11 +86,12 @@ class IGT():
         list of the methods employed to arrive at this instance of the IGT, for example through igt-detect
         or l-score
     '''
-    def __init__(self, line="NA", gloss="NA", translation="NA", prefix="NA", context="", source="NA", linenr=0, pagenr=0, classification_methods=[]):
+    def __init__(self, line="NA", gloss="NA", translation="NA", prefix="NA", grammarker = "NA", context="", source="NA", linenr=0, pagenr=0, classification_methods=[]):
         self.line = line
         self.gloss = gloss
         self.translation = translation
         self.prefix = prefix
+        self.grammarker = grammarker
         self.context = context
         self.source = source
         self.linenr = linenr
@@ -124,6 +124,7 @@ def harvest_IGTs(input_filepath: str, iscore_cutoff: float = 0.6):
             if linetag == 'L':
                 igt = IGT(line=utterance, linenr=int(linenr), source=source, pagenr=pagenr, 
                     classification_methods=['IGT initialized by L tag'])
+                igt.grammarker = detect_grammaticality(igt.line)
                 igt.context = get_context(lines, i, 'L')
                 IGTs.append(igt)
                 saved_linenrs.append(linenr)
@@ -162,6 +163,7 @@ def harvest_IGTs(input_filepath: str, iscore_cutoff: float = 0.6):
                                                                         pagenr=pagenr
                                                                         )
                     igt.prefix, igt.line = get_utterance_and_prefix(lines[i-1]) if linetag == 'G' else get_utterance_and_prefix(lines[i-2])
+                    igt.grammarker = detect_grammaticality(igt.line)
                     igt.classification_methods = ['IGT initialized by G or T tag, L assigned accordingly']
                     saved_linenrs.append(linenr)
                     continue
@@ -173,6 +175,7 @@ def harvest_IGTs(input_filepath: str, iscore_cutoff: float = 0.6):
                 else:
                     igt = IGT(gloss=utterance, source=source, pagenr=pagenr)
                     igt.prefix, igt.line = get_utterance_and_prefix(lines[i-1])
+                    igt.grammarker = detect_grammaticality(igt.line)
                     igt.translation = get_utterance(lines[i+1]) if i < len(lines)-2 else 'NA'
                     igt.classification_methods = ['IGT initialized by iscore L and T assigned accordingly']
                     igt.context = get_context(lines, i, 'G')
