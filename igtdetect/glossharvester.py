@@ -1,7 +1,16 @@
 import re
+import os
 
 def get_utterance(row: str):
     return row.split(':')[1].strip('\n') if ':' in row else 'NA'
+
+def get_utterance_and_prefix(row: str):
+    utterance = get_utterance(row)
+    prefix = detect_prefix(utterance)
+    if prefix:
+        for pf in prefix:
+            utterance = utterance.replace(pf, '')
+    return prefix, utterance
 
 def get_linenr(row: str):
     return row.split('line=')[1].split()[0] if 'line=' in row else 'NA'
@@ -16,8 +25,6 @@ def get_context(lines, index, linetype='G', context_size=5):
     context = ""
     for i in range(-context_size, context_size):
         context += str(get_utterance(lines[index+i]) + "\n")
-    print("CONTEXT:\n")
-    print(context)
     return context
 
 def detect_prefix(line: str):
@@ -71,10 +78,11 @@ class IGT():
         list of the methods employed to arrive at this instance of the IGT, for example through igt-detect
         or l-score
     '''
-    def __init__(self, line="NA", gloss="NA", translation="NA", context="", source="NA", linenr=0, pagenr=0, classification_methods=[]):
+    def __init__(self, line="NA", gloss="NA", translation="NA", prefix="NA", context="", source="NA", linenr=0, pagenr=0, classification_methods=[]):
         self.line = line
         self.gloss = gloss
         self.translation = translation
+        self.prefix = prefix
         self.context = context
         self.source = source
         self.linenr = linenr
@@ -85,7 +93,7 @@ class IGT():
     def __str__(self):
         return f"Source: {self.source}\nL: {self.line}\nG: {self.gloss}\nT: {self.translation}\nClassification methods: {self.classification_methods}\n"
 
-def harvest_IGTs(classified_freki_filepath: str, iscore_cutoff: float = 0.6):
+def harvest_IGTs(input_filepath: str, iscore_cutoff: float = 0.6):
     '''
     attempts to harvest as much information about each IGT as possible
     iterates through a freki file 
@@ -94,20 +102,20 @@ def harvest_IGTs(classified_freki_filepath: str, iscore_cutoff: float = 0.6):
     '''
     IGTs = []
     saved_linenrs = []
-    with open(classified_freki_filepath) as file:
-        classified_freki = file.readlines()
+    with open(input_filepath) as file:
+        lines = file.readlines()
     
-    for (i, row) in enumerate(classified_freki):
+    for (i, row) in enumerate(lines):
         if row.startswith('line'):
-            linetag = row.split('tag=')[1][0]
+            linetag = row.split('tag=')[1][0] if os.path.splitext(input_filepath)[1] =='.freki' else 'NA'
             linenr = get_linenr(row)
-            utterance = get_utterance(row)
+            prefix, utterance = get_utterance_and_prefix(row)
             iscore = get_iscore(row)
             
             if linetag == 'L':
                 igt = IGT(line=utterance, linenr=int(linenr), source=source, pagenr=pagenr, 
                     classification_methods=['IGT initialized by L tag'])
-                igt.context = get_context(classified_freki, i, 'L')
+                igt.context = get_context(lines, i, 'L')
                 IGTs.append(igt)
                 saved_linenrs.append(linenr)
                 continue
@@ -144,21 +152,21 @@ def harvest_IGTs(classified_freki_filepath: str, iscore_cutoff: float = 0.6):
                                                                         source=source, 
                                                                         pagenr=pagenr
                                                                         )
-                    igt.line = get_utterance(classified_freki[i-1]) if linetag == 'G' else get_utterance(classified_freki[i-2])
+                    igt.prefix, igt.line = get_utterance_and_prefix(lines[i-1]) if linetag == 'G' else get_utterance_and_prefix(lines[i-2])
                     igt.classification_methods = ['IGT initialized by G or T tag, L assigned accordingly']
                     saved_linenrs.append(linenr)
                     continue
 
             #if the iscore is higher than the cutoff, this might be a G
             if float(iscore) > iscore_cutoff:
-                if get_linenr(classified_freki[i-1]) in saved_linenrs:
+                if get_linenr(lines[i-1]) in saved_linenrs:
                     continue
                 else:
                     igt = IGT(gloss=utterance, source=source, pagenr=pagenr)
-                    igt.line = get_utterance(classified_freki[i-1])
-                    igt.translation = get_utterance(classified_freki[i+1]) if i < len(classified_freki)-2 else 'NA'
+                    igt.prefix, igt.line = get_utterance_and_prefix(lines[i-1])
+                    igt.translation = get_utterance(lines[i+1]) if i < len(lines)-2 else 'NA'
                     igt.classification_methods = ['IGT initialized by iscore L and T assigned accordingly']
-                    igt.context = get_context(classified_freki, i, 'G')
+                    igt.context = get_context(lines, i, 'G')
                     IGTs.append(igt)
                     saved_linenrs.append(linenr)
                     continue
