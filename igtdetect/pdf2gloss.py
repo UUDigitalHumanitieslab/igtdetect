@@ -114,9 +114,6 @@ def detect_igts(input_path, temp_path, model_path, config_path, base_path):
     analyzed_features_path = temp_path / 'analyzed_features'
     check_if_empty(input_path)
 
-    ## TEMPORARY WORKAROUND BECAUSE DETECT-IGT ISN'T WORKING
-    # return temp_path / 'features'
-
     try:
         subprocess.run(['python', os.path.join(base_path,'detect-igt'), 'test', '--config', config_path, '--classifier-path', model_path, '--test-files', input_path, '--classified-dir', analyzed_features_path])
         logging.info('igt-detect finished: analyzed {} files'.format(len(os.listdir(analyzed_features_path))))
@@ -163,7 +160,7 @@ def save_glosses_as_xml(IGT_list, output_path):
         meta.set('linenr', str(item.linenr))
         meta.set('prefix', str(item.prefix))
         meta.set('grammarker', str(item.grammarker))
-        meta.set('classicifaction_methods', item.classification_methods)
+        meta.set('classifaction_methods', item.classification_methods)
         meta.set('index', str(index))
         content = ET.SubElement(gloss, 'content')
         content.set('line', item.line)

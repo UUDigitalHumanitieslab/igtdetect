@@ -186,7 +186,7 @@ def harvest_IGTs(input_filepath: str, iscore_cutoff: float = 0.6):
         # save the doc_id as the source
         # can later maybe be expanded with page number as well (information available on the same row)
         elif row.startswith('doc_id'):
-            source = row.split('doc_id=')[1].split(' ')[0]
+            source = re.search(r"(?<=doc_id=)(.*)(?=-scanned)", row).group(1)
             pagenr = row.split('page=')[1].split(' ')[0]
         else:
             pass
