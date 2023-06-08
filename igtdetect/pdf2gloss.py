@@ -160,7 +160,7 @@ def save_glosses_as_xml(IGT_list, output_path):
         meta.set('linenr', str(item.linenr))
         meta.set('prefix', str(item.prefix))
         meta.set('grammarker', str(item.grammarker))
-        meta.set('classifaction_methods', item.classification_methods)
+        meta.set('classification_methods', item.classification_methods)
         meta.set('index', str(index))
         content = ET.SubElement(gloss, 'content')
         content.set('line', item.line)

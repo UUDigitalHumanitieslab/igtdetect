@@ -9,7 +9,7 @@ def get_utterance_and_prefix(row: str):
     prefix = detect_prefix(utterance)
     if prefix:
         for pf in prefix:
-            utterance = utterance.replace(pf, '')
+            utterance = utterance.replace(pf, '', 1)
     return prefix, utterance
 
 def get_linenr(row: str):
