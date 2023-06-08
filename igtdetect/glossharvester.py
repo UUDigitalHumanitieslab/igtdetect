@@ -2,7 +2,7 @@ import re
 import os
 
 def get_utterance(row: str):
-    return row.split(':')[1].strip('\n') if ':' in row else 'NA'
+    return re.split(r":(.*)", row)[1] if ':' in row else 'NA'
 
 def get_utterance_and_prefix(row: str):
     utterance = get_utterance(row)
