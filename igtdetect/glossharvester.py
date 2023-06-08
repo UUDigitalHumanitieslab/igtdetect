@@ -50,6 +50,10 @@ def detect_prefix(line: str):
     return prefix
 
 def detect_grammaticality(utterance: str):
+    '''
+    Detects the presence of a grammaticality marker, i.e. . ? # and %
+    in the first position of a word. If one is found, returns the marker
+    '''
     words = utterance.split()
     if len(words) > 0:
         grammaticality_marker = re.search(r"\*|\?|\#|\%", words[0][0])
@@ -73,6 +77,13 @@ class IGT():
     translation: str
         translation of the transcript line, usually in English
 
+    prefix: list
+        list of prefix items, usually a combination of numbers and letters to indicate serialization of a
+        gloss in a text, e.g. 1a), II, or C)
+
+    grammarker: str
+        a grammaticality marker(. ? # or %), indicating the grammar status of the utterance.
+    
     context: str
         the three lines before and after an IGT, to help with the enrichment, correction, and interpretation
 
@@ -190,6 +201,5 @@ def harvest_IGTs(input_filepath: str, iscore_cutoff: float = 0.6):
             pagenr = row.split('page=')[1].split(' ')[0]
         else:
             pass
-
 
     return IGTs
