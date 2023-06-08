@@ -2,7 +2,7 @@ import re
 import os
 
 def get_utterance(row: str):
-    return row.split(':', 1) if ':' in row else 'NA'
+    return row.split(':', 1)[1] if ':' in row else 'NA'
 
 def get_utterance_and_prefix(row: str):
     utterance = get_utterance(row)
@@ -36,30 +36,30 @@ def detect_prefix(line: str):
     number_pattern = r'\d+'
     prefix = []
     words = line.split()
-    item = words[0]
-    punctuations = re.findall(punctuation_pattern, item)
-    numerals = re.findall(number_pattern, item)
-    if (punctuations or numerals) and len(item) < 6:
-        prefix.append(item)
-        if len(words) > 1:
-            next_prefix = detect_prefix(' '.join(words[1:]))
-            if next_prefix:
-                prefix += next_prefix
-    else:
-        return None
-    return prefix
+    for item in words:
+        punctuations = re.findall(punctuation_pattern, item)
+        numerals = re.findall(number_pattern, item)
+        if (punctuations or numerals) and len(item) < 6:
+            prefix.append(item)
+        else:
+            return prefix
+    return None
 
 def detect_grammaticality(utterance: str):
     '''
     Detects the presence of a grammaticality marker, i.e. . ? # and %
-    in the first position of a word. If one is found, returns the marker
+    in the first position of a word. If one is found, returns the marker.
+    if two are found, it returns both. 
     '''
     words = utterance.split()
+    markers = ''
     if len(words) > 0:
-        grammaticality_marker = re.search(r"\*|\?|\#|\%", words[0][0])
-        if grammaticality_marker:
-            return grammaticality_marker.group()
-    return None
+        for char in words[0]:
+            grammaticality_marker = char in '*?#%'
+            if grammaticality_marker:
+                markers += char
+            else:
+                return markers
 
 
 class IGT():
