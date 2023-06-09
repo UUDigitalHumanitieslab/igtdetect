@@ -5,6 +5,7 @@ import glossharvester
 import logging
 from pathlib import Path
 import xml.etree.ElementTree as ET
+import pdf2doi
 
 
 def main(input_path, output_path, model_path='sample/new-model.pkl.gz', config_path='defaults.ini.sample'):
@@ -22,7 +23,7 @@ def main(input_path, output_path, model_path='sample/new-model.pkl.gz', config_p
 
     temp_path = setup_temp_dir(Path(output_path))
 
-    scanned_texts = scan_pdfs(Path(input_path), temp_path)
+    scanned_texts, dois = scan_pdfs(Path(input_path), temp_path)
 
     features = get_features_from_txts(scanned_texts, temp_path)
     
@@ -32,7 +33,7 @@ def main(input_path, output_path, model_path='sample/new-model.pkl.gz', config_p
                                 os.path.join(base_path,config_path), 
                                 base_path)
 
-    IGT_list = harvest_glosses(detected_igts)
+    IGT_list = harvest_glosses(detected_igts, dois)
 
     save_glosses_as_xml(IGT_list, output_path)
     exit()
@@ -41,6 +42,7 @@ def main(input_path, output_path, model_path='sample/new-model.pkl.gz', config_p
 def setup_temp_dir(output_path):
     '''
     Sets up the temporary environment to save the different output files that are generated
+    NOTE: user needs write access to output path
     '''
     temp_path = output_path / 'temp'
     Path.mkdir(temp_path, exist_ok=True)
@@ -53,9 +55,11 @@ def setup_temp_dir(output_path):
 
 def scan_pdfs(input_path, temp_path):
     '''
-    Iterates over a directory to find PDFs and converts them to txt files.
-    Returns path to the txt file directory.
+    Iterates over a directory to find PDFs and converts them to txt files
+    Also collects the doi from the pdf and saves it to a dict
+    Returns path to the txt file directory and the doi dict
     '''
+    dois = {}
     scanned_count = 0
     scanned_files_path = temp_path / 'txt'
     check_if_empty(input_path)
@@ -71,11 +75,18 @@ def scan_pdfs(input_path, temp_path):
                 scanned_count += 1
             except:
                 logging.error('PDF scan failed for: {}'.format(filename))
+
+            # get the doi from the pdf and save it into the dois dict
+            identifier_result = pdf2doi.pdf2doi(str(path_to_pdf))
+            if identifier_result['identifier'] is None:
+                logging.error('pdf2doi was not able to find a doi for {}'.format(filename))
+            else:
+                dois[os.path.splitext(filename)[0]] = identifier_result['identifier']
         else:
             logging.info("Could not process: {} - Not a PDF.".format(filename))
     
     logging.info("PDF scanning complete, scanned {} files".format(scanned_count))
-    return scanned_files_path
+    return scanned_files_path, dois
 
 
 def get_features_from_txts(input_path, temp_path):
@@ -122,8 +133,18 @@ def detect_igts(input_path, temp_path, model_path, config_path, base_path):
         logging.error('igt-detect failed: {}'.format(e.output))
         return temp_path / 'features'
 
+def match_dois(IGT_list, dois):
+    '''
+    Matches DOIs to IGT objects using the source filename (without the extension)
+    returns an IGT_list with the DOIs supplemented
+    '''
+    for igt in IGT_list:
+        try:
+            igt.doi = dois[igt.source]
+        except:
+            logging.info('No doi could be matched to {}'.format(igt.source))
 
-def harvest_glosses(input_path):
+def harvest_glosses(input_path, dois=None):
     '''
     Runs a harvesting script on top of the igt-detect analysis
     iterates over the freki file line-by-line and returns a list of IGT objects
@@ -133,10 +154,13 @@ def harvest_glosses(input_path):
 
 
     for freki_file in os.listdir(input_path):
-        path_to_freki_feature_file = input_path / freki_file
+        path_to_freki_feature_file = os.path.join(input_path, freki_file)
         IGT_list = glossharvester.harvest_IGTs(path_to_freki_feature_file)
         IGT_list_complete += IGT_list
         logging.info("Harvested glosses from {}, total of {} IGTs.".format(freki_file, len(IGT_list)))
+    
+    if dois:
+        match_dois(IGT_list_complete, dois)
 
     return IGT_list_complete
 
@@ -162,6 +186,7 @@ def save_glosses_as_xml(IGT_list, output_path):
         meta.set('grammarker', str(item.grammarker))
         meta.set('classification_methods', item.classification_methods)
         meta.set('index', str(index))
+        meta.set('doi', item.doi)
         content = ET.SubElement(gloss, 'content')
         content.set('line', item.line)
         content.set('gloss', item.gloss)
@@ -176,6 +201,9 @@ def save_glosses_as_xml(IGT_list, output_path):
         glosses_tree.write(file, encoding='unicode')
 
 def check_if_empty(path):
+    '''
+    Checks if a directory is empty, used for debugging
+    '''
     if len(os.listdir(path)) == 0:
         logging.error("No files found in {}.".format(path))
         return True
