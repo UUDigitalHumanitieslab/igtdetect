@@ -67,7 +67,7 @@ def scan_pdfs(input_path, temp_path):
     for filename in os.listdir(input_path):
         if filename.lower().endswith('.pdf'):
             path_to_pdf = input_path / filename
-            text_file = path_to_pdf.stem + '-scanned.txt'
+            text_file = os.path.splitext(filename)[0] + '-scanned.txt'
             path_to_txt = scanned_files_path / text_file
             try:
                 subprocess.run(['pdf2txt.py', '-t', 'xml', '-o', path_to_txt, path_to_pdf])
@@ -126,14 +126,12 @@ def detect_igts(input_path, temp_path, model_path, config_path, base_path):
     check_if_empty(input_path)
 
     try:
-        # TODO: make this a path that works everywhere with Ben's input
-        subprocess.check_output(['python', os.path.join(base_path,'detect-igt'), 'test', '--config', config_path, '--classifier-path', model_path, '--test-files', input_path, '--classified-dir', analyzed_features_path])
+        subprocess.run(['python', os.path.join(base_path,'detect-igt'), 'test', '--config', config_path, '--classifier-path', model_path, '--test-files', input_path, '--classified-dir', analyzed_features_path])
         logging.info('igt-detect finished: analyzed {} files'.format(len(os.listdir(analyzed_features_path))))
+        return analyzed_features_path
     except subprocess.CalledProcessError as e:
-        print(e.output)
-        analyzed_features_path = temp_path / 'features'
-        logging.error('igt-detect failed')
-    return analyzed_features_path
+        logging.error('igt-detect failed: {}'.format(e.output))
+        return temp_path / 'features'
 
 def match_dois(IGT_list, dois):
     '''
@@ -184,7 +182,9 @@ def save_glosses_as_xml(IGT_list, output_path):
         meta.set('source', item.source)
         meta.set('pagenr', str(item.pagenr))
         meta.set('linenr', str(item.linenr))
-        meta.set('classicifaction_methods', item.classification_methods)
+        meta.set('prefix', str(item.prefix))
+        meta.set('grammarker', str(item.grammarker))
+        meta.set('classification_methods', item.classification_methods)
         meta.set('index', str(index))
         meta.set('doi', item.doi)
         content = ET.SubElement(gloss, 'content')
