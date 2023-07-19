@@ -6,6 +6,7 @@ import logging
 from pathlib import Path
 import xml.etree.ElementTree as ET
 import pdf2doi
+from datetime import date
 
 
 def main(input_path, output_path, model_path='sample/new-model.pkl.gz', config_path='defaults.ini.sample'):
@@ -193,7 +194,7 @@ def save_glosses_as_xml(IGT_list, output_path):
         content.set('translation', item.translation)
         content.set('context', item.context)
 
-    filename = "IGTs_harvested.xml"
+    filename = "IGTs_harvested_" + str(date.today()) + ".xml"
     glosses_tree = ET.ElementTree(glosses)
     ET.indent(glosses_tree)
     
