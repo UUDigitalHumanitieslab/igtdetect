@@ -7,9 +7,10 @@ from pathlib import Path
 import xml.etree.ElementTree as ET
 import pdf2doi
 from datetime import date
+import pickle
 
 
-def main(input_path, output_path, model_path='sample/new-model.pkl.gz', config_path='defaults.ini.sample'):
+def main(input_path, output_path, model_path='sample/new-model.pkl.gz', config_path='defaults.ini.sample', doi_path=None):
     '''
     Looks in the input_path directory for PDFs, 
     scans them into txt files,
@@ -24,7 +25,7 @@ def main(input_path, output_path, model_path='sample/new-model.pkl.gz', config_p
 
     temp_path = setup_temp_dir(Path(output_path))
 
-    scanned_texts, dois = scan_pdfs(Path(input_path), temp_path)
+    scanned_texts, dois = scan_pdfs(Path(input_path), temp_path, doi_path)
 
     features = get_features_from_txts(scanned_texts, temp_path)
     
@@ -50,11 +51,12 @@ def setup_temp_dir(output_path):
     Path.mkdir(temp_path / 'txt', exist_ok=True)
     Path.mkdir(temp_path / 'features', exist_ok=True)
     Path.mkdir(temp_path / 'analyzed_features', exist_ok=True)
+    Path.mkdir(temp_path / 'DOIs', exist_ok=True)
     logging.debug('Created temporary directories.')
     return temp_path
     
 
-def scan_pdfs(input_path, temp_path):
+def scan_pdfs(input_path, temp_path, doi_path):
     '''
     Iterates over a directory to find PDFs and converts them to txt files
     Also collects the doi from the pdf and saves it to a dict
@@ -64,6 +66,11 @@ def scan_pdfs(input_path, temp_path):
     scanned_count = 0
     scanned_files_path = temp_path / 'txt'
     check_if_empty(input_path)
+
+    # if a doi path exists, take the existing dois
+    if doi_path:
+        with open(doi_path, 'rb') as doi_file:
+            dois = pickle.load(doi_file)
 
     for filename in os.listdir(input_path):
         if filename.lower().endswith('.pdf'):
@@ -78,14 +85,19 @@ def scan_pdfs(input_path, temp_path):
                 logging.error('PDF scan failed for: {}'.format(filename))
 
             # get the doi from the pdf and save it into the dois dict
-            identifier_result = pdf2doi.pdf2doi(str(path_to_pdf))
-            if identifier_result['identifier'] is None:
-                logging.error('pdf2doi was not able to find a doi for {}'.format(filename))
-            else:
-                dois[os.path.splitext(filename)[0]] = identifier_result['identifier']
+            if not doi_path:
+                identifier_result = pdf2doi.pdf2doi(str(path_to_pdf))
+                if identifier_result['identifier'] is None:
+                    logging.error('pdf2doi was not able to find a doi for {}'.format(filename))
+                else:
+                    dois[os.path.splitext(filename)[0]] = identifier_result['identifier']
         else:
             logging.info("Could not process: {} - Not a PDF.".format(filename))
     
+    if not doi_path:
+        with open(temp_path / 'DOIs', 'wb') as doi_file:
+            pickle.dump(dois, doi_file)
+
     logging.info("PDF scanning complete, scanned {} files".format(scanned_count))
     return scanned_files_path, dois
 
