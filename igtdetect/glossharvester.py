@@ -29,7 +29,7 @@ def get_context(lines, index, linetype='G', context_size=5):
     for i in range(-context_size, context_size):
         try:
             utterance = get_utterance(lines[index+i])
-            context += utterance if utterance is not 'NA' else ''
+            context += utterance if utterance != 'NA' else ''
         except:
             return context
     return context
