@@ -34,7 +34,7 @@ def main(input_path, output_path, model_path='sample/new-model.pkl.gz', config_p
                                 os.path.join(base_path, model_path), 
                                 os.path.join(base_path,config_path), 
                                 base_path)
-
+    
     IGT_list = harvest_glosses(detected_igts, dois)
 
     save_glosses_as_xml(IGT_list, output_path)
@@ -77,25 +77,28 @@ def scan_pdfs(input_path, temp_path, doi_path):
             path_to_pdf = input_path / filename
             text_file = os.path.splitext(filename)[0] + '-scanned.txt'
             path_to_txt = scanned_files_path / text_file
-            try:
-                subprocess.run(['pdf2txt.py', '-t', 'xml', '-o', path_to_txt, path_to_pdf])
-                logging.info("Scanned {}".format(filename))
-                scanned_count += 1
-            except:
-                logging.error('PDF scan failed for: {}'.format(filename))
+            if os.path.isfile(path_to_txt):
+                pass
+            else:
+                try:
+                    subprocess.run(['pdf2txt.py', '-t', 'xml', '-o', path_to_txt, path_to_pdf])
+                    logging.info("Scanned {}".format(filename))
+                    scanned_count += 1
+                except:
+                    logging.error('PDF scan failed for: {}'.format(filename))
 
-            # get the doi from the pdf and save it into the dois dict
-            if not doi_path:
-                identifier_result = pdf2doi.pdf2doi(str(path_to_pdf))
-                if identifier_result['identifier'] is None:
-                    logging.error('pdf2doi was not able to find a doi for {}'.format(filename))
-                else:
-                    dois[os.path.splitext(filename)[0]] = identifier_result['identifier']
+                # get the doi from the pdf and save it into the dois dict
+                if not doi_path:
+                    identifier_result = pdf2doi.pdf2doi(str(path_to_pdf))
+                    if identifier_result['identifier'] is None:
+                        logging.error('pdf2doi was not able to find a doi for {}'.format(filename))
+                    else:
+                        dois[os.path.splitext(filename)[0]] = identifier_result['identifier']
         else:
             logging.info("Could not process: {} - Not a PDF.".format(filename))
     
     if not doi_path:
-        with open(temp_path / 'DOIs', 'wb') as doi_file:
+        with open(temp_path / 'DOIs' / 'doi_dict.pkl', 'wb') as doi_file:
             pickle.dump(dois, doi_file)
 
     logging.info("PDF scanning complete, scanned {} files".format(scanned_count))
@@ -114,14 +117,18 @@ def get_features_from_txts(input_path, temp_path):
     for filename in os.listdir(input_path):
         if filename.endswith('.txt'):
             path_to_txt = input_path / filename
-            filename = os.path.basename(filename).split('-scanned')[0] + '-features.txt'
+            filename = os.path.basename(filename).split('-scanned')[0]+ '-features.txt'
+            filename = filename.replace(' ', '_')
             path_to_feature = features_path / filename
-            try:
-                subprocess.run(['freki', path_to_txt, path_to_feature, '-r', 'pdfminer'])
-                logging.info("Got features from {}".format(filename))
-                features_count += 1
-            except:
-                logging.error('Freki analysis failed for: {}'.format(filename))
+            if os.path.isfile(path_to_feature):
+                pass
+            else:
+                try:
+                    subprocess.run(['freki', path_to_txt, path_to_feature, '-r', 'pdfminer'])
+                    logging.info("Got features from {}".format(filename))
+                    features_count += 1
+                except:
+                    logging.error('Freki analysis failed for: {}'.format(filename))
         else:
             logging.info("Could not get features from: {} - Not a txt.".format(filename))
     
