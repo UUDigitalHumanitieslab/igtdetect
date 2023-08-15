@@ -25,6 +25,8 @@ def main(input_path, output_path, model_path='sample/new-model.pkl.gz', config_p
 
     temp_path = setup_temp_dir(Path(output_path))
 
+    replace_spaces_in_filename(input_path)
+
     scanned_texts, dois = scan_pdfs(Path(input_path), temp_path, doi_path)
 
     features = get_features_from_txts(scanned_texts, temp_path)
@@ -55,6 +57,19 @@ def setup_temp_dir(output_path):
     logging.debug('Created temporary directories.')
     return temp_path
     
+def replace_spaces_in_filename(directory_path):
+    '''
+    Replaces all the whitespace with underscores in filenames
+    Needed to make detect-igt work
+    '''
+    for filename in os.listdir(directory_path):
+        if ' ' in filename:
+            new_filename = filename.replace(' ', '_')
+            
+            old_path = os.path.join(directory_path, filename)
+            new_path = os.path.join(directory_path, new_filename)
+            
+            os.rename(old_path, new_path)
 
 def scan_pdfs(input_path, temp_path, doi_path):
     '''
